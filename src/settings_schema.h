@@ -35,6 +35,7 @@
     X(Bool, bClimateLoad, true, "fixes a bug where the game fails to properly apply sunrise and sunset data from Climate records if you load a saved game in an interior")                                          \
     X(Bool, bConjurationEnchantAbsorbs, true, "fixes a bug where spell absorption triggers on enchanted items using conjuration summons")                                                                           \
     X(Bool, bConsoleSaveDeadlock, true, "fixes a deadlock (permanent hang, no crash) when the console 'save' command executes off the main thread, e.g. issued programmatically via Console::ExecuteCommand")       \
+    X(Bool, bConditionLogNullSubjectCrash, true, "(VR-only) prevents the IsInCombat condition diagnostic path from requesting a display name from a null subject")                                                  \
     X(Bool, bCreateArmorNodeNullPtrCrash, true, "fixes typo that may cause a crash somewhere in CreateArmorNode")                                                                                                   \
     X(Bool, bCullingFreedObjectCrash, true, "guards cull traversal against dispatch through a scene object's freed or reused vftable during cell streaming")                                                        \
     X(Bool, bDoublePerkApply, true, "fixes NPC perks applying twice when you load a game")                                                                                                                          \

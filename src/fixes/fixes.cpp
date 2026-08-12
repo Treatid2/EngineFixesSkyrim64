@@ -16,6 +16,7 @@
 #include "calendar_skipping.h"
 #include "cell_init.h"
 #include "climate_load.h"
+#include "condition_log_null_subject_crash.h"
 #include "conjuration_enchant_absorbs.h"
 #include "console_save_deadlock.h"
 #include "copybonetransform_null_crash.h"
@@ -98,6 +99,9 @@ namespace Fixes
 
         if (Settings::Fixes::bConsoleSaveDeadlock.GetValue())
             ConsoleSaveDeadlock::Install();
+
+        if (Settings::Fixes::bConditionLogNullSubjectCrash.GetValue())
+            ConditionLogNullSubjectCrash::Install();
 
         if (Settings::Fixes::bCreateArmorNodeNullPtrCrash.GetValue())
             CreateArmorNodeNullPtrCrash::Install();
