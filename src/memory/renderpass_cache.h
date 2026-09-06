@@ -75,7 +75,7 @@ namespace Memory::RenderPassCache
         // Passes rejected by that check, and whether the first one has been logged.
         inline std::uint64_t s_foreign = 0;
 
-        // sceneLights capacity, resolved from uRenderPassSceneLights at Install.
+        // Published sceneLights count contract, resolved at Install.
         inline std::size_t                s_sceneLights = 16;
         inline std::atomic<std::uint64_t> s_lightCountClamps{ 0 };
 
@@ -182,9 +182,9 @@ namespace Memory::RenderPassCache
                 a_renderPass->sceneLights[i] = nullptr;
 
             if (copy != a_numLights) {
-                // Shadow lights follow numLights in the same array. Once the
-                // normal-light count is truncated, their original start index
-                // no longer describes the copied layout, so fail closed.
+                // Shadow lights occupy the tail of the numLights range. Once
+                // that total is truncated, the original shadow boundary no
+                // longer describes the copied layout, so fail closed.
                 a_renderPass->numShadowLights = 0;
                 const auto clamps = s_lightCountClamps.fetch_add(1, std::memory_order_relaxed) + 1;
                 if (clamps == 1 || clamps % kOverflowLogInterval == 0) {
@@ -322,14 +322,14 @@ namespace Memory::RenderPassCache
 
         inline bool Install()
         {
-            // Resolve the sceneLights capacity. Clamped so a bad value
-            // cannot make the array smaller than the engine's own 16-entry assumption
-            // or larger than what AllocateSceneLights actually reserves.
+            // Resolve the published sceneLights contract. Clamping keeps it no
+            // smaller than the engine's own 16-entry assumption and no larger
+            // than the 64 slots AllocateSceneLights reserves.
             s_sceneLights = std::clamp(
                 static_cast<std::size_t>(Settings::MemoryManager::uRenderPassSceneLights.GetValue()),
                 kSceneLightsMin, kSceneLightsMax);
             s_lightCountClamps.store(0, std::memory_order_relaxed);
-            logger::info("render pass scene-light capacity: {} entries per pass"sv, s_sceneLights);
+            logger::info("render pass scene-light contract: {} entries per pass (64 zeroed storage slots)"sv, s_sceneLights);
 
             const auto capacity = ResolveCapacity();
             try {
