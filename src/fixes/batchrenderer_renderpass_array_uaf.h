@@ -44,23 +44,26 @@ namespace Fixes::BatchRendererRenderPassArrayUAF
             } };
         }
 
-        // Both reads are internal to the VR RenderBatches implementation. The first
-        // selects the next occupied pass after rendering; the second loads that pass.
+        // Inside BSBatchRenderer::GetNextPassSlotInGroup: selects the next occupied
+        // pass after rendering. Requires address-library id 100851's VR mapping
+        // (alandtse/skyrim_vr_address_library#203).
         inline std::array<ReadSite, 1> SitesVRFindNextPass()
         {
             return { {
-                { REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x1349230 } }.address(),
-                    REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x1349238 } }.address(),
-                    REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x134925C } }.address() },
+                { REL::Relocation<std::uintptr_t>{ REL::ID(100851), 0x30 }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100851), 0x38 }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100851), 0x5C }.address() },
             } };
         }
 
+        // Inside BSBatchRenderer::ApplyPassAlphaCullState (same function as
+        // SitesVRApplyPassAlphaCullState above): loads the selected pass.
         inline std::array<ReadSite, 1> SitesVRLoadPass()
         {
             return { {
-                { REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x13494EB } }.address(),
-                    REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x13494F3 } }.address(),
-                    REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x134952A } }.address() },
+                { REL::Relocation<std::uintptr_t>{ REL::ID(100852), 0x27B }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100852), 0x283 }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100852), 0x2BA }.address() },
             } };
         }
 
