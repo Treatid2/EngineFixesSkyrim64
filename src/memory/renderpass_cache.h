@@ -144,8 +144,10 @@ namespace Memory::RenderPassCache
         // the engine a garbage BSLight* that it then refcounts -- a corruption path
         // with no relationship to when anything is freed.
         //
-        // Match the configured engine contract: allocate the whole slice, always
-        // zero-fill past numLights, and never reallocate once attached to a pass.
+        // Preserve the runtime-tested 64-slot allocation while treating
+        // s_sceneLights as the published contract. Zeroed spare slots keep
+        // out-of-contract reads inside owned storage without exposing poison
+        // pointers to engine refcounting.
         //
         // Native Mesh Light Flicker Fix (Nexus 186432) states it performs "runtime
         // expansion of the native BSRenderPass scene-light storage from the vanilla
@@ -161,8 +163,8 @@ namespace Memory::RenderPassCache
         inline RE::BSLight** AllocateSceneLights()
         {
             auto* lights = static_cast<RE::BSLight**>(
-                Allocator::GetAllocator()->AllocateAligned(sizeof(RE::BSLight*) * s_sceneLights, 8));
-            std::memset(lights, 0, sizeof(RE::BSLight*) * s_sceneLights);
+                Allocator::GetAllocator()->AllocateAligned(sizeof(RE::BSLight*) * kSceneLightsMax, 8));
+            std::memset(lights, 0, sizeof(RE::BSLight*) * kSceneLightsMax);
             return lights;
         }
 
@@ -176,15 +178,19 @@ namespace Memory::RenderPassCache
             const auto copy = (std::min)(static_cast<std::size_t>(a_numLights), s_sceneLights);
             for (std::size_t i = 0; i < copy; ++i)
                 a_renderPass->sceneLights[i] = a_lights[i];
-            for (std::size_t i = copy; i < s_sceneLights; ++i)
+            for (std::size_t i = copy; i < kSceneLightsMax; ++i)
                 a_renderPass->sceneLights[i] = nullptr;
 
             if (copy != a_numLights) {
+                // Shadow lights follow numLights in the same array. Once the
+                // normal-light count is truncated, their original start index
+                // no longer describes the copied layout, so fail closed.
+                a_renderPass->numShadowLights = 0;
                 const auto clamps = s_lightCountClamps.fetch_add(1, std::memory_order_relaxed) + 1;
                 if (clamps == 1 || clamps % kOverflowLogInterval == 0) {
                     logger::warn(
                         "render pass requested {} scene lights with capacity {}; truncating the count "
-                        "({} occurrences) -- raise uRenderPassSceneLights"sv,
+                        "and clearing shadow lights ({} occurrences) -- raise uRenderPassSceneLights"sv,
                         a_numLights, s_sceneLights, clamps);
                 }
             }
