@@ -34,13 +34,13 @@ namespace Fixes::BatchRendererRenderPassArrayUAF
             } };
         }
 
-        // Anchored by a raw offset, not REL::ID(100853): the address-library's VR column for
-        // 100853 currently duplicates 100852 instead of pointing at GetRenderPassIndex.
+        // VR's duplicate-id bug (100853 pointed at 100852's address) was fixed upstream
+        // in skyrim_vr_address_library's database.csv on 2026-09-01; safe to use the id directly now.
         inline std::array<Site, 1> SitesVRGetRenderPassIndex()
         {
             return { {
-                { REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x1349647 } }.address(),
-                    REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x134965D } }.address() },
+                { REL::Relocation<std::uintptr_t>{ REL::ID(100853), 0x57 }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100853), 0x6D }.address() },
             } };
         }
 
