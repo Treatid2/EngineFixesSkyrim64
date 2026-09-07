@@ -47,6 +47,18 @@ namespace Memory::Allocator
 
     class TBBAllocator final : public IAllocator
     {
+        static void FreeWithCRT(void* a_mem)
+        {
+            logger::info("TBB safer free routed foreign allocation {:X} to CRT"sv, reinterpret_cast<std::uintptr_t>(a_mem));
+            free(a_mem);
+        }
+
+        static void FreeAlignedWithCRT(void* a_mem)
+        {
+            logger::info("TBB safer free routed foreign aligned allocation {:X} to CRT"sv, reinterpret_cast<std::uintptr_t>(a_mem));
+            _aligned_free(a_mem);
+        }
+
     public:
         [[nodiscard]] void* Allocate(std::size_t a_size) override
         {
@@ -72,13 +84,13 @@ namespace Memory::Allocator
         {
             if (!a_mem && REL::Module::IsVR())
                 return;
-            return scalable_free(a_mem);
+            return __TBB_malloc_safer_free(a_mem, FreeWithCRT);
         }
         void DeallocateAligned(void* a_mem) override
         {
             if (!a_mem && REL::Module::IsVR())
                 return;
-            return scalable_aligned_free(a_mem);
+            return __TBB_malloc_safer_free(a_mem, FreeAlignedWithCRT);
         }
         void ReplaceImports() override
         {

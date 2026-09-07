@@ -27,7 +27,7 @@ a regression, disable the settings introduced at or after the first broken relea
 | `bBSLightingShaderForceAlphaTest` | `true` | ≤ 7.0.20 | fixes object LOD reflections by forcing alpha test flag on when NiAlphaProperty/AlphaTest is true |
 | `bBSLightingShaderParallaxBug` | `true` | ≤ 7.0.20 | fixes a bug causing the parallax technique to break if specular is not also set |
 | `bBSLightingShaderPropertyShadowMap` | `true` | ≤ 7.0.20 | fixes re-use of render passes when a light has multiple shadow map passes |
-| `bBatchRendererRenderPassArrayUAF` | `true` | 7.4.9 | guards BSBatchRenderer render-pass array writes when a stale technique lookup resolves to a null-derived low address |
+| `bBatchRendererRenderPassArrayUAF` | `true` | 7.4.9 | guards BSBatchRenderer render-pass array accesses through a cleared or null-derived pass-list pointer |
 | `bBatchRendererShaderTechniqueUAF` | `true` | 7.6.3 | guards BSBatchRenderer's per-pass shader technique dispatch against a freed or reused shader vftable |
 | `bBSTaskPoolNullVtableCrash` | `true` | 7.2.0 | fixes a crash in BSTaskPool when an actor is freed while a pathfinding task is still pending |
 | `bBSTempEffectNiRTTI` | `true` | ≤ 7.0.20 | fixes a bug where the NiRTTI for this object is not set properly |
@@ -44,7 +44,7 @@ a regression, disable the settings introduced at or after the first broken relea
 | `bEquipShoutEventSpam` | `true` | ≤ 7.0.20 | fixes a bug where the "equip shout" procedure will send a "shout equipped" event even if the shout fails to equip |
 | `bESLCELLLoadBug` | `true` | ≤ 7.0.20 | fixes issues with interior cells created in ESL files |
 | `bFaceGenMorphDataHeadNullPtrCrash` | `true` | ≤ 7.0.20 | fixes a crash in face morphing, possibly related to decapitations |
-| `bGCArrayCleanupBug` | `true` | 7.7.0 | fixes the Papyrus VM's incremental garbage collector sometimes exiting its array/object cleanup loop after a single entry, forgoing the rest of its time budget and causing progressive script lag/hitches; skipped on VR |
+| `bGCArrayCleanupBug` | `true` | 7.7.0 | fixes the Papyrus VM's incremental garbage collector sometimes exiting its array/object cleanup loop after a single entry, forgoing the rest of its time budget and causing progressive script lag/hitches |
 | `bGetGameSettingNotFoundCrash` | `true` | 7.4.0 | fixes a crash when the "GetGameSetting" (getgs) console command is given a setting name that doesn't exist |
 | `bGetKeywordItemCount` | `false` | ≤ 7.0.20 | fixes the condition function "GetKeywordItemCount", which returns broken results sometimes |
 | `bGHeapLeakDetectionCrash` | `true` | ≤ 7.0.20 | fixes a crash where scaleform attempts to report a memory leak but the code doesn't exist in Skyrim's build |
@@ -84,6 +84,7 @@ a regression, disable the settings introduced at or after the first broken relea
 | `bLockpickingMenuInitCrash` | `true` | 7.4.4 | (VR-only) guards the LockpickingMenu against a null-pointer crash when its lock/pick 3D models aren't loaded yet on the first frame |
 | `bBSOpenVRHandIndexNullCrash` | `true` | 7.4.7 | (VR-only) guards BSOpenVR::GetTrackedDeviceIndexForHand against a null-pointer crash when the VR hand-device API is queried while the HMD is asleep / OpenVR is not initialized (no SteamVR null driver loaded) |
 | `bMistMenuVRAvatarNodeNullCrash` | `true` | 7.6.3 | (VR-only) guards MistMenu's per-frame HMD/hand avatar-node transform update against a null-pointer crash when a cached node pointer isn't populated |
+| `bMapMenuCloseHandlersNullGuard` | `true` | 7.8.0 | (VR-only) guards MapMenu::CloseHandlers' 5-slot input-handler teardown loop against a null or torn/not-yet-constructed handler pointer |
 
 ## [Patches]
 
@@ -135,6 +136,7 @@ a regression, disable the settings introduced at or after the first broken relea
 
 ## Settings by release
 
+- **7.8.0**: `bMapMenuCloseHandlersNullGuard`
 - **7.7.0**: `bGCArrayCleanupBug`
 - **7.6.4**: `bDoubleReleaseTripleComPtrTeardown`
 - **7.6.3**: `bBatchRendererShaderTechniqueUAF`, `bMistMenuVRAvatarNodeNullCrash`

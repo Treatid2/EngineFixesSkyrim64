@@ -1,3 +1,22 @@
+## [7.8.0](https://github.com/alandtse/EngineFixesSkyrim64/compare/v7.7.1...v7.8.0) (2026-09-07)
+
+### Features
+
+* **vr:** guard CloseHandlers against bad handlers ([#72](https://github.com/alandtse/EngineFixesSkyrim64/issues/72)) ([789674b](https://github.com/alandtse/EngineFixesSkyrim64/commit/789674b8ac2b032eaf3ecde44a134c070498cca7))
+
+### Bug Fixes
+
+* guard SE/AE render-pass reads (UAF) ([#76](https://github.com/alandtse/EngineFixesSkyrim64/issues/76)) ([2d38604](https://github.com/alandtse/EngineFixesSkyrim64/commit/2d38604228f31d8e9eea8ff0b97886df4b1b6fa8))
+* **memory:** restore safer TBB deallocation ([#73](https://github.com/alandtse/EngineFixesSkyrim64/issues/73)) ([4ab2f1d](https://github.com/alandtse/EngineFixesSkyrim64/commit/4ab2f1dc6c38bd6cfc35679792165a04872857e1))
+* **vr:** guard render-pass iterator reads ([#75](https://github.com/alandtse/EngineFixesSkyrim64/issues/75)) ([d8e200b](https://github.com/alandtse/EngineFixesSkyrim64/commit/d8e200b6902d109417f2b64d445b704128b0cc46))
+
+
+### New Settings
+
+* `[Fixes] bMapMenuCloseHandlersNullGuard` (default `true`) — (VR-only) guards MapMenu::CloseHandlers' 5-slot input-handler teardown loop against a null or torn/not-yet-constructed handler pointer
+
+The full settings reference, including the release each setting first appeared in, is in [SETTINGS.md](SETTINGS.md).
+
 ## [7.7.1](https://github.com/alandtse/EngineFixesSkyrim64/compare/v7.7.0...v7.7.1) (2026-09-01)
 
 ### Bug Fixes

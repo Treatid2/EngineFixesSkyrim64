@@ -62,11 +62,6 @@ namespace Fixes::GCArrayCleanupBug
 
     inline void Install()
     {
-        if (REL::Module::IsVR()) {
-            logger::warn("skipping GC array/object cleanup bug fix: unsupported VR runtime"sv);
-            return;
-        }
-
         const std::uintptr_t arrAddr = REL::RelocationID(98217, 104859).address();
         const std::uintptr_t objAddr = REL::RelocationID(98218, 104860).address();
 
