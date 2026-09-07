@@ -84,6 +84,7 @@ a regression, disable the settings introduced at or after the first broken relea
 | `bLockpickingMenuInitCrash` | `true` | 7.4.4 | (VR-only) guards the LockpickingMenu against a null-pointer crash when its lock/pick 3D models aren't loaded yet on the first frame |
 | `bBSOpenVRHandIndexNullCrash` | `true` | 7.4.7 | (VR-only) guards BSOpenVR::GetTrackedDeviceIndexForHand against a null-pointer crash when the VR hand-device API is queried while the HMD is asleep / OpenVR is not initialized (no SteamVR null driver loaded) |
 | `bMistMenuVRAvatarNodeNullCrash` | `true` | 7.6.3 | (VR-only) guards MistMenu's per-frame HMD/hand avatar-node transform update against a null-pointer crash when a cached node pointer isn't populated |
+| `bMapMenuCloseHandlersNullGuard` | `true` | 7.8.0 | (VR-only) guards MapMenu::CloseHandlers' 5-slot input-handler teardown loop against a null or torn/not-yet-constructed handler pointer |
 
 ## [Patches]
 
@@ -135,6 +136,7 @@ a regression, disable the settings introduced at or after the first broken relea
 
 ## Settings by release
 
+- **7.8.0**: `bMapMenuCloseHandlersNullGuard`
 - **7.7.0**: `bGCArrayCleanupBug`
 - **7.6.4**: `bDoubleReleaseTripleComPtrTeardown`
 - **7.6.3**: `bBatchRendererShaderTechniqueUAF`, `bMistMenuVRAvatarNodeNullCrash`
