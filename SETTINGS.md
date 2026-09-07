@@ -27,7 +27,7 @@ a regression, disable the settings introduced at or after the first broken relea
 | `bBSLightingShaderForceAlphaTest` | `true` | ≤ 7.0.20 | fixes object LOD reflections by forcing alpha test flag on when NiAlphaProperty/AlphaTest is true |
 | `bBSLightingShaderParallaxBug` | `true` | ≤ 7.0.20 | fixes a bug causing the parallax technique to break if specular is not also set |
 | `bBSLightingShaderPropertyShadowMap` | `true` | ≤ 7.0.20 | fixes re-use of render passes when a light has multiple shadow map passes |
-| `bBatchRendererRenderPassArrayUAF` | `true` | 7.4.9 | guards BSBatchRenderer render-pass array writes when a stale technique lookup resolves to a null-derived low address |
+| `bBatchRendererRenderPassArrayUAF` | `true` | 7.4.9 | guards BSBatchRenderer render-pass array accesses through a cleared or null-derived pass-list pointer |
 | `bBatchRendererShaderTechniqueUAF` | `true` | 7.6.3 | guards BSBatchRenderer's per-pass shader technique dispatch against a freed or reused shader vftable |
 | `bBSTaskPoolNullVtableCrash` | `true` | 7.2.0 | fixes a crash in BSTaskPool when an actor is freed while a pathfinding task is still pending |
 | `bBSTempEffectNiRTTI` | `true` | ≤ 7.0.20 | fixes a bug where the NiRTTI for this object is not set properly |

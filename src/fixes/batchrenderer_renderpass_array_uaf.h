@@ -2,11 +2,11 @@
 
 #include <algorithm>
 
-// Guards BSBatchRenderer::ApplyPassAlphaCullState and GetRenderPassIndex against writing
-// through a cleared/null-derived PassGroup pointer left in renderPassMap. A heap pointer
-// can't be range-checked against the module image like a vftable can, so the guard instead
-// skips the write below kMinPlausiblePointer. AE encodes ApplyPassAlphaCullState's index
-// register as RAX instead of RCX, hence the separate Patch/matcher pair.
+// Guards BSBatchRenderer against accessing a cleared/null-derived renderPass array. A heap
+// pointer can't be range-checked against the module image like a vftable can, so the guard
+// instead skips accesses below kMinPlausiblePointer. AE encodes
+// ApplyPassAlphaCullState's index register as RAX instead of RCX, hence the separate
+// Patch/matcher pair.
 
 namespace Fixes::BatchRendererRenderPassArrayUAF
 {
@@ -18,6 +18,13 @@ namespace Fixes::BatchRendererRenderPassArrayUAF
             std::uintptr_t resumeAddress;  // where both branches converge, right after the block
         };
 
+        struct ReadSite
+        {
+            std::uintptr_t patchAddress;
+            std::uintptr_t resumeAddress;
+            std::uintptr_t emptyAddress;
+        };
+
         // VR reuses SE's ID(100852); verified by disassembly to resolve to the same function.
         inline std::array<Site, 1> SitesVRApplyPassAlphaCullState()
         {
@@ -27,13 +34,36 @@ namespace Fixes::BatchRendererRenderPassArrayUAF
             } };
         }
 
-        // Anchored by a raw offset, not REL::ID(100853): the address-library's VR column for
-        // 100853 currently duplicates 100852 instead of pointing at GetRenderPassIndex.
+        // VR's duplicate-id bug (100853 pointed at 100852's address) was fixed upstream
+        // in skyrim_vr_address_library's database.csv on 2026-09-01; safe to use the id directly now.
         inline std::array<Site, 1> SitesVRGetRenderPassIndex()
         {
             return { {
-                { REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x1349647 } }.address(),
-                    REL::Relocation<std::uintptr_t>{ REL::Offset{ 0x134965D } }.address() },
+                { REL::Relocation<std::uintptr_t>{ REL::ID(100853), 0x57 }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100853), 0x6D }.address() },
+            } };
+        }
+
+        // Inside BSBatchRenderer::GetNextPassSlotInGroup: selects the next occupied
+        // pass after rendering. Requires address-library id 100851's VR mapping
+        // (alandtse/skyrim_vr_address_library#203).
+        inline std::array<ReadSite, 1> SitesVRFindNextPass()
+        {
+            return { {
+                { REL::Relocation<std::uintptr_t>{ REL::ID(100851), 0x30 }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100851), 0x38 }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100851), 0x5C }.address() },
+            } };
+        }
+
+        // Inside BSBatchRenderer::ApplyPassAlphaCullState (same function as
+        // SitesVRApplyPassAlphaCullState above): loads the selected pass.
+        inline std::array<ReadSite, 1> SitesVRLoadPass()
+        {
+            return { {
+                { REL::Relocation<std::uintptr_t>{ REL::ID(100852), 0x27B }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100852), 0x283 }.address(),
+                    REL::Relocation<std::uintptr_t>{ REL::ID(100852), 0x2BA }.address() },
             } };
         }
 
@@ -188,6 +218,72 @@ namespace Fixes::BatchRendererRenderPassArrayUAF
             return std::equal(std::begin(kExpected), std::end(kExpected), p);
         }
 
+        // Reload renderPass._data for every probe because rendering a pass can clear
+        // the array before the iterator asks for the next occupied slot.
+        struct PatchFindNextPass final : Xbyak::CodeGenerator
+        {
+            PatchFindNextPass(std::uintptr_t a_resume, std::uintptr_t a_empty)
+            {
+                Xbyak::Label emptyLbl, resumeAddr, emptyAddr;
+
+                mov(rcx, qword[r11 + 0x8]);
+                cmp(rcx, kMinPlausiblePointer);
+                jbe(emptyLbl);
+
+                lea(rdx, qword[rbx + r8]);
+                jmp(ptr[rip + resumeAddr]);
+
+                L(emptyLbl);
+                mov(dword[r9], r10d);
+                mov(rbx, qword[rsp]);
+                mov(eax, 0x5);
+                jmp(ptr[rip + emptyAddr]);
+
+                L(resumeAddr);
+                dq(a_resume);
+                L(emptyAddr);
+                dq(a_empty);
+            }
+        };
+
+        inline bool SiteMatchesFindNextPass(std::uintptr_t a_addr)
+        {
+            static constexpr std::uint8_t kExpected[] = { 0x49, 0x8B, 0x4B, 0x08, 0x4A, 0x8D, 0x14, 0x03 };
+            const auto*                   p = reinterpret_cast<const std::uint8_t*>(a_addr);
+            return std::equal(std::begin(kExpected), std::end(kExpected), p);
+        }
+
+        struct PatchLoadPass final : Xbyak::CodeGenerator
+        {
+            PatchLoadPass(std::uintptr_t a_resume, std::uintptr_t a_empty)
+            {
+                Xbyak::Label emptyLbl, resumeAddr, emptyAddr;
+
+                mov(rax, qword[rsi + 0x8]);
+                cmp(rax, kMinPlausiblePointer);
+                jbe(emptyLbl);
+
+                mov(rbx, qword[rax + rdx * 8]);
+                jmp(ptr[rip + resumeAddr]);
+
+                L(emptyLbl);
+                xor_(ebx, ebx);
+                jmp(ptr[rip + emptyAddr]);
+
+                L(resumeAddr);
+                dq(a_resume);
+                L(emptyAddr);
+                dq(a_empty);
+            }
+        };
+
+        inline bool SiteMatchesLoadPass(std::uintptr_t a_addr)
+        {
+            static constexpr std::uint8_t kExpected[] = { 0x48, 0x8B, 0x46, 0x08, 0x48, 0x8B, 0x1C, 0xD0 };
+            const auto*                   p = reinterpret_cast<const std::uint8_t*>(a_addr);
+            return std::equal(std::begin(kExpected), std::end(kExpected), p);
+        }
+
         template <class PatchT>
         inline std::size_t PatchSites(std::span<const Site> a_sites, bool (*a_matches)(std::uintptr_t))
         {
@@ -206,12 +302,33 @@ namespace Fixes::BatchRendererRenderPassArrayUAF
             }
             return installed;
         }
+
+        template <class PatchT>
+        inline std::size_t PatchReadSites(std::span<const ReadSite> a_sites, bool (*a_matches)(std::uintptr_t))
+        {
+            auto&       trampoline = SKSE::GetTrampoline();
+            std::size_t installed = 0;
+            for (const auto& site : a_sites) {
+                REL::Relocation<std::uintptr_t> patch{ site.patchAddress };
+                if (!a_matches(patch.address())) {
+                    logger::warn("batchrenderer renderpass array UAF fix: unexpected bytes at {:X}, skipping site"sv, site.patchAddress);
+                    continue;
+                }
+                PatchT p{ site.resumeAddress, site.emptyAddress };
+                p.ready();
+                patch.write_branch<5>(trampoline.allocate(p));
+                ++installed;
+            }
+            return installed;
+        }
     }
 
     inline void Install()
     {
         std::size_t installed = 0;
         if (REL::Module::IsVR()) {
+            installed += detail::PatchReadSites<detail::PatchFindNextPass>(detail::SitesVRFindNextPass(), detail::SiteMatchesFindNextPass);
+            installed += detail::PatchReadSites<detail::PatchLoadPass>(detail::SitesVRLoadPass(), detail::SiteMatchesLoadPass);
             installed += detail::PatchSites<detail::PatchApplyPassRcx>(detail::SitesVRApplyPassAlphaCullState(), detail::SiteMatchesApplyPassRcx);
             installed += detail::PatchSites<detail::PatchGetRenderPassIndex>(detail::SitesVRGetRenderPassIndex(), detail::SiteMatchesGetRenderPassIndex);
         } else if (REL::Module::IsAE()) {
